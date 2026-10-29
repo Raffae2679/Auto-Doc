@@ -52,7 +52,7 @@ jobs:
 
       - name: Compilar Executavel Unico com PyInstaller
         run: |
-          pyinstaller --noconsole --onefile --name "${{ matrix.nome_binario }}" --collect-all customtkinter --collect-submodules pynput --collect-all xhtml2pdf --collect-submodules reportlab auto_doc_gui.py
+          pyinstaller --noconsole --onefile --name "${{ matrix.nome_binario }}" --collect-all customtkinter --collect-submodules pynput --collect-all xhtml2pdf --collect-submodules reportlab auto_doc.py
 
       - name: Guardar executavel gerado (Artifact)
         uses: actions/upload-artifact@v4
