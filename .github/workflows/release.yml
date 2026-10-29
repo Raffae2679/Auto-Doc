@@ -1,0 +1,96 @@
+name: Build e Publicacao de Release (Windows e Linux)
+
+on:
+  # Dispara automaticamente sempre que você enviar uma tag começando com "v" (ex: v1.0.0)
+  push:
+    tags:
+      - 'v*'
+  # Também permite disparar manualmente pelo botão na aba Actions do GitHub
+  workflow_dispatch:
+
+# Permissão necessária para o robô do GitHub criar a Release e anexar os executáveis
+permissions:
+  contents: write
+
+jobs:
+  # ============================================================================
+  # JOB 1: COMPILAÇÃO EM MÁQUINA VIRTUAL WINDOWS E LINUX (EM PARALELO)
+  # ============================================================================
+  compilar_executaveis:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            nome_binario: AutoDoc_IT_Windows
+            arquivo_final: AutoDoc_IT_Windows.exe
+          - os: ubuntu-22.04
+            nome_binario: AutoDoc_IT_Linux
+            arquivo_final: AutoDoc_IT_Linux
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Baixar codigo do repositorio
+        uses: actions/checkout@v4
+
+      - name: Instalar pacotes graficos do sistema (Apenas Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-tk python3-dev xdotool scrot
+
+      - name: Configurar Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Instalar bibliotecas do projeto e PyInstaller
+        run: |
+          python -m pip install --upgrade pip
+          pip install customtkinter pynput mss pillow google-genai pydantic markdown xhtml2pdf pyinstaller
+
+      - name: Compilar Executavel Unico com PyInstaller
+        run: |
+          pyinstaller --noconsole --onefile --name "${{ matrix.nome_binario }}" --collect-all customtkinter --collect-submodules pynput --collect-all xhtml2pdf --collect-submodules reportlab auto_doc_gui.py
+
+      - name: Guardar executavel gerado (Artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: pacote-${{ matrix.nome_binario }}
+          path: dist/${{ matrix.arquivo_final }}
+
+  # ============================================================================
+  # JOB 2: CRIAÇÃO AUTOMÁTICA DA RELEASE NA PÁGINA DO GITHUB
+  # ============================================================================
+  publicar_release:
+    needs: compilar_executaveis
+    # Só cria a Release pública se o disparo veio de uma tag de versão (ex: v1.0.0)
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar os executaveis compilados (Windows e Linux)
+        uses: actions/download-artifact@v4
+        with:
+          path: arquivos_release
+          merge-multiple: true
+
+      - name: Criar Release no GitHub e anexar binarios
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "AutoDoc IT — Versão ${{ github.ref_name }}"
+          generate_release_notes: true
+          body: |
+            ## 🚀 AutoDoc IT (${{ github.ref_name }})
+            Gravador inteligente de procedimentos e documentação técnica com Google Gemini 2.5 Flash.
+
+            ### 📥 Downloads Diretos:
+            * **Windows (10/11):** Baixe o arquivo **`AutoDoc_IT_Windows.exe`** abaixo e execute (não requer Python instalado).
+            * **Linux (Ubuntu/Debian/Mint):** Baixe o arquivo **`AutoDoc_IT_Linux`**, dê permissão de execução (`chmod +x AutoDoc_IT_Linux`) e rode (`./AutoDoc_IT_Linux`).
+
+            ---
+            *© Desenvolvido por Raffael Dutra*
+          files: |
+            arquivos_release/AutoDoc_IT_Windows.exe
+            arquivos_release/AutoDoc_IT_Linux
