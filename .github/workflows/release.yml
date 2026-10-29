@@ -44,17 +44,20 @@ jobs:
   # ============================================================================
   compilar_linux:
     runs-on: ubuntu-latest
-    # Usa o Debian 11 (Bullseye) com GLIBC 2.31 para máxima compatibilidade retroativa
     container:
-      image: python:3.11-bullseye
+      image: python:3.11-slim-bullseye
     steps:
       - name: Transferir codigo do repositorio
         uses: actions/checkout@v4
 
       - name: Instalar pacotes graficos e dependencias do sistema Linux
         run: |
-          apt-get update
-          apt-get install -y python3-tk tk-dev tcl-dev xdotool scrot binutils libgl1
+          # Remove entradas de seguranca desatualizadas que causam erro 404 e atualiza indices
+          sed -i '/bullseye-security/d' /etc/apt/sources.list || true
+          rm -f /etc/apt/sources.list.d/* || true
+          apt-get update --allow-releaseinfo-change
+          apt-get install -y --no-install-recommends --fix-missing \
+            python3-tk tk-dev tcl-dev xdotool scrot binutils
 
       - name: Instalar bibliotecas e PyInstaller
         run: |
