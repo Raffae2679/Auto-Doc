@@ -52,12 +52,21 @@ jobs:
 
       - name: Instalar pacotes graficos e dependencias do sistema Linux
         run: |
-          # Remove entradas de seguranca desatualizadas que causam erro 404 e atualiza indices
-          sed -i '/bullseye-security/d' /etc/apt/sources.list || true
+          # Define os repositorios oficiais atualizados do Debian 11 (Bullseye)
+          cat << 'EOF' > /etc/apt/sources.list
+          deb http://deb.debian.org/debian bullseye main
+          deb http://deb.debian.org/debian bullseye-updates main
+          deb http://security.debian.org/debian-security bullseye-security main
+          EOF
           rm -f /etc/apt/sources.list.d/* || true
+          
+          # Atualiza os indices e sincroniza as versoes base (libc6 / perl)
           apt-get update --allow-releaseinfo-change
-          apt-get install -y --no-install-recommends --fix-missing \
-            python3-tk tk-dev tcl-dev xdotool scrot binutils
+          apt-get upgrade -y --no-install-recommends
+          
+          # Instala apenas os binarios de execucao necessarios para o PyInstaller e Tkinter
+          apt-get install -y --no-install-recommends \
+            python3-tk libtk8.6 libtcl8.6 xdotool scrot binutils libgl1
 
       - name: Instalar bibliotecas e PyInstaller
         run: |
