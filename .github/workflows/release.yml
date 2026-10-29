@@ -40,33 +40,23 @@ jobs:
           path: dist/AutoDoc_IT_Windows.exe
 
   # ============================================================================
-  # JOB 1B: COMPILAÇÃO LINUX (COMPATÍVEL COM GLIBC >= 2.31 / MINT / DEBIAN / UBUNTU)
+  # JOB 1B: COMPILAÇÃO LINUX (RODANDO NO UBUNTU MAIS RECANTE E ESTÁVEL)
   # ============================================================================
   compilar_linux:
     runs-on: ubuntu-latest
-    container:
-      image: python:3.11-slim-bullseye
     steps:
       - name: Transferir codigo do repositorio
         uses: actions/checkout@v4
 
-      - name: Instalar pacotes graficos e dependencias do sistema Linux
+      - name: Instalar dependencias graficas do sistema Linux
         run: |
-          # Define os repositorios oficiais atualizados do Debian 11 (Bullseye)
-          cat << 'EOF' > /etc/apt/sources.list
-          deb http://deb.debian.org/debian bullseye main
-          deb http://deb.debian.org/debian bullseye-updates main
-          deb http://security.debian.org/debian-security bullseye-security main
-          EOF
-          rm -f /etc/apt/sources.list.d/* || true
-          
-          # Atualiza os indices e sincroniza as versoes base (libc6 / perl)
-          apt-get update --allow-releaseinfo-change
-          apt-get upgrade -y --no-install-recommends
-          
-          # Instala apenas os binarios de execucao necessarios para o PyInstaller e Tkinter
-          apt-get install -y --no-install-recommends \
-            python3-tk libtk8.6 libtcl8.6 xdotool scrot binutils libgl1
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends python3-tk xdotool scrot binutils libgl1
+
+      - name: Configurar Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
 
       - name: Instalar bibliotecas e PyInstaller
         run: |
@@ -109,7 +99,7 @@ jobs:
 
             ### 📥 Transferências Diretas:
             * **Windows (10/11):** Transfira o ficheiro **`AutoDoc_IT_Windows.exe`** abaixo e execute.
-            * **Linux (Mint/Ubuntu/Debian):** Transfira o ficheiro **`AutoDoc_IT_Linux`** (compatível com GLIBC 2.31+), dê permissão de execução (`chmod +x AutoDoc_IT_Linux`) e execute (`./AutoDoc_IT_Linux`).
+            * **Linux:** Transfira o ficheiro **`AutoDoc_IT_Linux`**, dê permissão de execução (`chmod +x AutoDoc_IT_Linux`) e execute (`./AutoDoc_IT_Linux`).
 
             ---
             *© Desenvolvido por Raffael Dutra*
