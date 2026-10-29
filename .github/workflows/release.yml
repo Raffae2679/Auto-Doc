@@ -83,7 +83,7 @@ jobs:
           generate_release_notes: true
           body: |
             ## 🚀 AutoDoc IT (${{ github.ref_name }})
-            Gravador inteligente de procedimentos e documentação técnica com Google Gemini 2.5 Flash.
+            Gravador inteligente de procedimentos e documentação técnica com Google Gemini 2.5 Flash..
 
             ### 📥 Downloads Diretos:
             * **Windows (10/11):** Baixe o arquivo **`AutoDoc_IT_Windows.exe`** abaixo e execute (não requer Python instalado).
