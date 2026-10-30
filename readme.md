@@ -1,3 +1,4 @@
+<img width="1891" height="959" alt="auto doc video" src="https://github.com/user-attachments/assets/fdeebcb2-c763-47e8-b793-01777a85917e" />
 # 🖥️ AutoDoc IT — Gravador Inteligente de Procedimentos e Documentação
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue?style=for-the-badge&logo=python)
@@ -18,12 +19,13 @@ Veja na prática como o **AutoDoc IT** captura um fluxo operacional completo e g
 
 <div align="center">
   <!-- Substitua o link abaixo pelo seu vídeo .mp4 arrastado no GitHub ou link do YouTube -->
-  <a href="https://youtube.com" target="_blank">
+  <a href="https://github.com/user-attachments/assets/915dd71e-8b0a-4192-99ea-6bb7b50793eb" target="_blank">
     <img src="docs/assets/auto doc video.gif" alt="Assista à Demonstração do AutoDoc IT" width="800"/>
   </a>
 </div>
 
 ---
+
 
 ## 📸 Galeria de Imagens (Screenshots)
 
@@ -123,85 +125,8 @@ Durante o uso do aplicativo, você pode controlar toda a operação através dos
 Abaixo está um exemplo real de documentação gerada automaticamente pelo **AutoDoc IT** utilizando o template **POP / Runbook (Infra)**:
 
 > 🔗 **Exemplos completos para download/visualização:**
-> * [📥 Visualizar Exemplo em PDF (`procedimento_exemplo.pdf`)](docs/exemplos/procedimento.pdf)
-> * [🌐 Baixar Exemplo em HTML Interativo (`procedimento_interativo.html`)](docs/exemplos/procedimento_interativo.html)
+> * [🌐 Baixar Exemplo em HTML Interativo (`procedimento_interativo.html`)](https://htmlpreview.github.io/?https://github.com/Raffae2679/Auto-Doc/blob/main/docs/exemplos/procedimento_interativo.html)
 
-<details>
-<summary><b>👁️ Clique aqui para expandir um exemplo de relatório em Markdown gerado pela IA</b></summary>
-<br>
-
-### `# Verificação de Conectividade e Reinicialização do Serviço SSH via Terminal`
-
-| Organização / Setor | Autor / Responsável | Data de Emissão | Tipo |
-| :--- | :--- | :--- | :--- |
-| Tecnologia da Informação e Comunicação | Raffael Dutra — Equipe de TI / Infraestrutura | 29/10/2026 14:30 | **POP / Runbook Técnico** |
-
-**Objetivo Operacional:** Validar o status do serviço OpenSSH Server em servidor Linux e realizar o restart seguro da aplicação mantendo a gerência ativa.
-
----
-
-#### 1. Pré-requisitos e Acessos Necessários
-- [ ] Acesso à rede de gerência dos servidores (VLAN de Infraestrutura).
-- [ ] Credenciais com privilégio administrativo (`sudo` ou `root`).
-
----
-
-#### 2. Procedimento de Execução
-
-##### Passo 1: Abertura do Emulador de Terminal
-* **Janela / Aplicação:** `Área de Trabalho / Menu Iniciar`
-
-Clique sobre o ícone do terminal no painel principal ou utilize o atalho de teclado para iniciar a sessão de linha de comando.
-
-> **Nota Técnica:** Certifique-se de que o perfil carregado possui codificação UTF-8 configurada.
-
-![Passo 1](docs/assets/exemplo_passo_01.png)
-
----
-
-##### Passo 2: Verificação do Status Atual do Serviço SSH
-* **Janela / Aplicação:** `terminal — bash`
-
-Digite o comando abaixo no terminal e pressione a tecla **Enter** para inspecionar se o daemon do SSH está ativo e em execução:
-
-```bash
-sudo systemctl status ssh
-```
-
-> **Nota Técnica:** Verifique se a linha `Active:` apresenta o estado `active (running)` em verde antes de prosseguir.
-
-![Passo 2](docs/assets/exemplo_passo_02.png)
-
----
-
-##### Passo 3: Reinicialização do Serviço e Validação de Porta
-* **Janela / Aplicação:** `terminal — bash`
-
-Execute o comando de reinicialização do serviço e confirme a escuta na porta padrão `22`:
-
-```bash
-sudo systemctl restart ssh && sudo ss -tlpn | grep sshd
-```
-
-> **Nota Técnica:** O comando `ss -tlpn` confirma imediatamente se o processo voltou a escutar conexões TCP na porta configurada.
-
-![Passo 3](docs/assets/exemplo_passo_03.png)
-
----
-
-#### 3. Checklist de Validação Pós-Procedimento
-- [ ] Serviço reportando status `active (running)` sem erros no journalctl.
-- [ ] Nova conexão SSH de teste estabelecida com sucesso em janela paralela.
-
----
-
-#### 4. Plano de Rollback (Reversão em Caso de Falha)
-Caso o serviço não inicie devido a erro de sintaxe no arquivo `/etc/ssh/sshd_config`, execute `sudo sshd -t` para identificar a linha inválida, restaure o backup com `sudo cp /etc/ssh/sshd_config.bkp /etc/ssh/sshd_config` e inicie o serviço novamente com `sudo systemctl start ssh`.
-
----
-*© Desenvolvido por Raffael Dutra — Documentação gerada via AutoDoc IT.*
-
-</details>
 
 ---
 
