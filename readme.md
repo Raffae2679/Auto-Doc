@@ -1,4 +1,3 @@
-<img width="1891" height="959" alt="auto doc video" src="https://github.com/user-attachments/assets/fdeebcb2-c763-47e8-b793-01777a85917e" />
 # 🖥️ AutoDoc IT — Gravador Inteligente de Procedimentos e Documentação
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue?style=for-the-badge&logo=python)
