@@ -1013,6 +1013,183 @@ class BibliotecaModal(ctk.CTkToplevel):
         else:
             subprocess.Popen(["xdg-open", caminho])
 
+class ProgressoGeracaoModal(ctk.CTkToplevel):
+    """Janela modal que exibe o progresso em tempo real, cronômetro e logs da geração via Gemini."""
+
+    def __init__(self, parent, total_passos: int, nome_template: str):
+        super().__init__(parent)
+        self.title("⏳ Gerando Documentação com Gemini 2.5 Flash")
+        self.geometry("640x430")
+        self.resizable(False, False)
+
+        self.total_passos = total_passos
+        self.cancelado = False
+        self.finalizado = False
+        self.inicio_ts = time.time()
+
+        self.transient(parent)
+        self.grab_set()
+        self.protocol("WM_DELETE_WINDOW", self._ao_clicar_fechar)
+
+        # Container Principal
+        frame = ctk.CTkFrame(self)
+        frame.pack(fill="both", expand=True, padx=20, pady=20)
+
+        # Cabeçalho + Cronômetro
+        frame_topo = ctk.CTkFrame(frame, fg_color="transparent")
+        frame_topo.pack(fill="x", padx=15, pady=(12, 4))
+
+        self.lbl_etapa = ctk.CTkLabel(
+            frame_topo,
+            text="🚀 Inicializando preparação dos dados...",
+            font=("Segoe UI", 15, "bold"),
+            text_color="#ffffff",
+            anchor="w"
+        )
+        self.lbl_etapa.pack(side="left", fill="x", expand=True)
+
+        self.lbl_tempo = ctk.CTkLabel(
+            frame_topo,
+            text="⏱️ 00:00s",
+            font=("Consolas", 13, "bold"),
+            text_color="#0dcaf0"
+        )
+        self.lbl_tempo.pack(side="right")
+
+        # Subtítulo com detalhes em tempo real (Streaming)
+        self.lbl_detalhe = ctk.CTkLabel(
+            frame,
+            text=f"Template: {nome_template} | Total de passos: {total_passos}",
+            font=("Segoe UI", 12),
+            text_color="#adb5bd",
+            anchor="w"
+        )
+        self.lbl_detalhe.pack(fill="x", padx=15, pady=(0, 10))
+
+        # Barra de Progresso + Percentual
+        frame_barra = ctk.CTkFrame(frame, fg_color="transparent")
+        frame_barra.pack(fill="x", padx=15, pady=(0, 12))
+
+        self.barra_progresso = ctk.CTkProgressBar(frame_barra, height=16, corner_radius=8)
+        self.barra_progresso.pack(side="left", fill="x", expand=True, padx=(0, 10))
+        self.barra_progresso.set(0.0)
+
+        self.lbl_percentual = ctk.CTkLabel(
+            frame_barra,
+            text="0%",
+            font=("Segoe UI", 13, "bold"),
+            width=45,
+            text_color="#0dcaf0"
+        )
+        self.lbl_percentual.pack(side="right")
+
+        # Caixa de Log em Tempo Real
+        ctk.CTkLabel(
+            frame,
+            text="Log de Execução em Tempo Real:",
+            font=("Segoe UI", 12, "bold"),
+            anchor="w"
+        ).pack(fill="x", padx=15, pady=(2, 4))
+
+        self.txt_log = ctk.CTkTextbox(
+            frame,
+            height=185,
+            font=("Consolas", 12),
+            fg_color="#18181b",
+            text_color="#e4e4e7"
+        )
+        self.txt_log.pack(fill="both", expand=True, padx=15, pady=(0, 12))
+        self.txt_log.configure(state="disabled")
+
+        # Botão Inferior (Cancelar / Fechar)
+        frame_botoes = ctk.CTkFrame(frame, fg_color="transparent")
+        frame_botoes.pack(fill="x", padx=15, pady=(0, 8))
+
+        self.btn_acao = ctk.CTkButton(
+            frame_botoes,
+            text="✖ Cancelar Operação",
+            fg_color="#dc3545",
+            hover_color="#bb2d3b",
+            font=("Segoe UI", 12, "bold"),
+            width=170,
+            command=self._ao_clicar_fechar
+        )
+        self.btn_acao.pack(side="right")
+
+        self.adicionar_log(f"Iniciando processamento de {total_passos} passo(s)...")
+        self.adicionar_log(f"Template selecionado: {nome_template}")
+        self._atualizar_cronometro()
+
+    def _atualizar_cronometro(self):
+        if not self.finalizado and self.winfo_exists():
+            decorrido = int(time.time() - self.inicio_ts)
+            mins, segs = divmod(decorrido, 60)
+            self.lbl_tempo.configure(text=f"⏱️ {mins:02d}:{segs:02d}s")
+            self.after(250, self._atualizar_cronometro)
+
+    def adicionar_log(self, mensagem: str):
+        if not self.winfo_exists():
+            return
+        hora_str = datetime.now().strftime("%H:%M:%S")
+        self.txt_log.configure(state="normal")
+        self.txt_log.insert("end", f"[{hora_str}] {mensagem}\n")
+        self.txt_log.see("end")
+        self.txt_log.configure(state="disabled")
+
+    def atualizar_progresso(self, valor: float, etapa: Optional[str] = None, detalhe: Optional[str] = None):
+        if not self.winfo_exists():
+            return
+        valor_limpo = max(0.0, min(1.0, valor))
+        self.barra_progresso.set(valor_limpo)
+        self.lbl_percentual.configure(text=f"{int(valor_limpo * 100)}%")
+
+        if etapa:
+            self.lbl_etapa.configure(text=etapa)
+        if detalhe:
+            self.lbl_detalhe.configure(text=detalhe)
+
+    def marcar_sucesso(self, msg_final: str):
+        if not self.winfo_exists():
+            return
+        self.finalizado = True
+        self.atualizar_progresso(
+            1.0,
+            etapa="✅ Documentação gerada com sucesso!",
+            detalhe=msg_final
+        )
+        self.barra_progresso.configure(progress_color="#198754")
+        self.lbl_percentual.configure(text_color="#20c997")
+        self.adicionar_log("🎉 Processamento concluído! O documento já está disponível no editor.")
+        self.btn_acao.configure(
+            text="✅ Fechar Janela",
+            fg_color="#198754",
+            hover_color="#157347"
+        )
+        # Fecha automaticamente após 1.5s para agilizar o fluxo
+        self.after(1500, lambda: self.destroy() if self.winfo_exists() else None)
+
+    def marcar_erro(self, erro_str: str):
+        if not self.winfo_exists():
+            return
+        self.finalizado = True
+        self.lbl_etapa.configure(text="❌ Falha ao gerar o relatório", text_color="#ff6b6b")
+        self.lbl_detalhe.configure(text="Verifique os detalhes do erro no log abaixo.")
+        self.barra_progresso.configure(progress_color="#dc3545")
+        self.lbl_percentual.configure(text_color="#ff6b6b")
+        self.adicionar_log("--------------------------------------------------")
+        self.adicionar_log(f"ERRO REPORTADO: {erro_str}")
+        self.adicionar_log("Dica: Verifique sua conexão com a internet e sua Gemini API Key.")
+        self.btn_acao.configure(
+            text="Fechar",
+            fg_color="#6c757d",
+            hover_color="#5c636a"
+        )
+
+    def _ao_clicar_fechar(self):
+        if not self.finalizado:
+            self.cancelado = True
+            self.adicionar_log("⚠️ Cancelamento solicitado pelo usuário. Interrompendo...")
+        self.destroy()
 
 # ==============================================================================
 # SEÇÃO 7: APLICAÇÃO PRINCIPAL (INTERFACE, LISTENERS, IA E LIMPEZA DE PASTAS)
@@ -1024,7 +1201,7 @@ class AutoDocApp(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.title("AutoDoc IT - Gravador Inteligente de Procedimentos | © Raffael Dutra")
-        self.geometry("1440x780")
+        self.geometry("1540x780")
         self.minsize(1220, 660)
 
         # Caminhos Base e Configuração Criptografada
@@ -2236,8 +2413,15 @@ class AutoDocApp(ctk.CTk):
 
         self.btn_gerar_ia.configure(state="disabled", text="⏳ Processando...")
         self.lbl_status.configure(
-            text=f"Enviando todos os {len(self.passos)} passos para o Gemini 2.5 Flash...",
+            text=f"Processando {len(self.passos)} passos com o Gemini 2.5 Flash...",
             text_color="#ffc107"
+        )
+
+        # Abre a janela modal de progresso em tempo real
+        self.modal_progresso = ProgressoGeracaoModal(
+            self,
+            total_passos=len(self.passos),
+            nome_template=self.cmb_template.get()
         )
 
         threading.Thread(target=self._thread_chamar_gemini, daemon=True).start()
@@ -2269,10 +2453,29 @@ class AutoDocApp(ctk.CTk):
         return f"{base}\nInstruções adicionais do autor: {extra_user}" if extra_user else base
 
     def _thread_chamar_gemini(self):
+        modal = getattr(self, "modal_progresso", None)
+
+        def ui_prog(valor: float, etapa: str = None, detalhe: str = None, log: str = None):
+            """Helper seguro para atualizar a janela modal a partir da thread secundária."""
+            def _update():
+                if modal and modal.winfo_exists():
+                    modal.atualizar_progresso(valor, etapa, detalhe)
+                    if log:
+                        modal.adicionar_log(log)
+            self.after(0, _update)
+
         try:
             template_escolhido = self.cmb_template.get()
             instrucao_estilo = self._obter_instrucao_template(template_escolhido)
             total_passos = len(self.passos)
+
+            # ETAPA 1: Preparação das imagens e prompts (0% a 20%)
+            ui_prog(
+                0.05,
+                etapa="📦 Etapa 1/4: Preparando capturas de tela e metadados...",
+                detalhe=f"Empacotando {total_passos} imagens para envio...",
+                log="Inicializando cliente Google GenAI..."
+            )
 
             client = genai.Client(api_key=self.api_key_atual)
             conteudos = [
@@ -2287,6 +2490,9 @@ class AutoDocApp(ctk.CTk):
             ]
 
             for idx, item in enumerate(self.passos):
+                if modal and modal.cancelado:
+                    raise InterruptedError("Operação cancelada pelo usuário.")
+
                 num_passo = idx + 1
                 contexto_passo = (
                     f"=== PASSO {num_passo} DE {total_passos} ===\n"
@@ -2297,7 +2503,25 @@ class AutoDocApp(ctk.CTk):
                 conteudos.append(contexto_passo)
                 conteudos.append(item["pil_img"])
 
-            resposta = client.models.generate_content(
+                prog_empacotamento = 0.05 + (0.15 * (num_passo / total_passos))
+                ui_prog(
+                    prog_empacotamento,
+                    detalhe=f"Preparando imagem do Passo {num_passo} de {total_passos} ({item['tipo']})...",
+                    log=f"✔ Passo {num_passo:02d}/{total_passos:02d} anexado ({item['tipo']} em '{item.get('janela', 'Sistema')[:28]}')"
+                )
+
+            # ETAPA 2: Conexão e envio para a API do Gemini (20% a 30%)
+            if modal and modal.cancelado:
+                raise InterruptedError("Operação cancelada pelo usuário.")
+
+            ui_prog(
+                0.25,
+                etapa="☁️ Etapa 2/4: Enviando imagens para o Gemini 2.5 Flash...",
+                detalhe="Aguardando início da análise visual pela IA (isso pode levar alguns segundos)...",
+                log="Enviando pacote multimodal para a nuvem do Google Gemini..."
+            )
+
+            resposta_stream = client.models.generate_content_stream(
                 model="gemini-2.5-flash",
                 contents=conteudos,
                 config=types.GenerateContentConfig(
@@ -2307,14 +2531,69 @@ class AutoDocApp(ctk.CTk):
                 ),
             )
 
-            doc: DocumentoProcedimento = resposta.parsed
+            # ETAPA 3: Recebimento em Streaming em Tempo Real (30% a 88%)
+            texto_json_acumulado = ""
+            ultimo_passo_detectado = 0
+            estimativa_chars_total = max(800, total_passos * 380)
+
+            ui_prog(
+                0.30,
+                etapa="🧠 Etapa 3/4: Gemini analisando telas e redigindo passos...",
+                detalhe="Conectado! Recebendo estrutura da documentação em tempo real...",
+                log="Conexão estabelecida! Recebendo pacotes de texto (Streaming)..."
+            )
+
+            for chunk in resposta_stream:
+                if modal and modal.cancelado:
+                    raise InterruptedError("Operação cancelada pelo usuário.")
+
+                if chunk.text:
+                    texto_json_acumulado += chunk.text
+
+                    # Conta quantos passos já foram estruturados no JSON parcial
+                    passos_prontos = len(re.findall(r'"numero_passo"\s*:', texto_json_acumulado))
+                    chars_recebidos = len(texto_json_acumulado)
+
+                    # Calcula o avanço da barra entre 30% e 88%
+                    fator_passos = passos_prontos / total_passos
+                    fator_chars = min(0.95, chars_recebidos / estimativa_chars_total)
+                    progresso_stream = 0.30 + (0.58 * max(fator_passos, fator_chars))
+
+                    msg_log_passo = None
+                    if passos_prontos > ultimo_passo_detectado:
+                        ultimo_passo_detectado = passos_prontos
+                        msg_log_passo = f"✍️ IA redigiu o Passo {passos_prontos:02d} de {total_passos:02d}..."
+
+                    ui_prog(
+                        progresso_stream,
+                        etapa=f"🧠 Etapa 3/4: Redigindo documentação ({min(passos_prontos, total_passos)}/{total_passos} passos)...",
+                        detalhe=f"Recebidos {chars_recebidos} caracteres da IA em tempo real...",
+                        log=msg_log_passo
+                    )
+
+            # ETAPA 4: Validação e Montagem do Documento (88% a 100%)
+            ui_prog(
+                0.92,
+                etapa="📝 Etapa 4/4: Formatando documento Markdown e salvando...",
+                detalhe="Validando estrutura de dados e organizando diretórios...",
+                log="Resposta completa recebida! Validando schema JSON..."
+            )
+
+            try:
+                doc: DocumentoProcedimento = DocumentoProcedimento.model_validate_json(texto_json_acumulado)
+            except AttributeError:
+                doc: DocumentoProcedimento = DocumentoProcedimento.parse_raw(texto_json_acumulado)
+
             self._renomear_pasta_com_titulo_ia(doc.titulo_geral)
             markdown_gerado = self._montar_texto_markdown(doc, template_escolhido)
             self._salvar_metadados_sessao(doc.titulo_geral, doc.resumo_objetivo)
+
             self.after(0, lambda: self._concluir_geracao_ui(markdown_gerado, None))
 
+        except InterruptedError as cancel_err:
+            self.after(0, lambda: self._concluir_geracao_ui(None, str(cancel_err), cancelado=True))
         except Exception as erro:
-            self.after(0, lambda: self._concluir_geracao_ui(None, str(erro)))
+            self.after(0, lambda: self._concluir_geracao_ui(None, str(erro), cancelado=False))
 
     def _montar_texto_markdown(self, doc: DocumentoProcedimento, template: str) -> str:
         data_atual = datetime.now().strftime("%d/%m/%Y %H:%M")
@@ -2419,16 +2698,24 @@ class AutoDocApp(ctk.CTk):
 
         return "\n".join(linhas)
 
-    def _concluir_geracao_ui(self, texto_md: str, erro: str):
+    def _concluir_geracao_ui(self, texto_md: str, erro: str, cancelado: bool = False):
         self.btn_gerar_ia.configure(state="normal", text="✨ Gerar com Gemini")
+        modal = getattr(self, "modal_progresso", None)
+
+        if cancelado:
+            self.lbl_status.configure(text="⚠️ Geração cancelada pelo usuário.", text_color="#ffc107")
+            return
 
         if erro:
-            self.lbl_status.configure(text="Erro ao chamar a Gemini API.", text_color="#dc3545")
-            messagebox.showerror(
-                "Erro na API",
-                f"Falha ao processar com o Gemini:\n{erro}\n\n"
-                "Dica: Verifique se a chave configurada no botão '🔒 API' está correta."
-            )
+            self.lbl_status.configure(text="❌ Erro ao chamar a Gemini API.", text_color="#dc3545")
+            if modal and modal.winfo_exists():
+                modal.marcar_erro(erro)
+            else:
+                messagebox.showerror(
+                    "Erro na API",
+                    f"Falha ao processar com o Gemini:\n{erro}\n\n"
+                    "Dica: Verifique se a chave configurada no botão '🔒 API' está correta."
+                )
             return
 
         self.txt_editor.delete("0.0", "end")
@@ -2438,10 +2725,14 @@ class AutoDocApp(ctk.CTk):
         with open(caminho_padrao, "w", encoding="utf-8") as f:
             f.write(texto_md)
 
+        nome_pasta_final = os.path.basename(self.pasta_sessao)
         self.lbl_status.configure(
-            text=f"✅ Salvo em: {os.path.basename(self.pasta_sessao)}",
+            text=f"✅ Salvo em: {nome_pasta_final}",
             text_color="#20c997"
         )
+
+        if modal and modal.winfo_exists():
+            modal.marcar_sucesso(f"Salvo em: {nome_pasta_final}")
 
     # --------------------------------------------------------------------------
     # SUBSEÇÃO 7.6: MOTORES DE EXPORTAÇÃO (.MD, .HTML INTERATIVO E .PDF)
